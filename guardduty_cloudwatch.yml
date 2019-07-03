@@ -1,0 +1,19 @@
+Resources:
+  GuardDutySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      DisplayName: guardduty-event-topic
+      TopicName: guardduty-event-topic
+
+  GuardDutyEventRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      EventPattern:
+        source:
+          - "aws.guardduty"
+      Name: guardduty-event-rule
+      State: ENABLED
+      Targets:
+        - Arn: !Join [":", ["arn:aws:sns", !Ref "AWS::Region", !Ref "AWS::AccountId", "guardduty-event-rule"]]
+          Id: 20190702
+    DependsOn: GuardDutySNSTopic
