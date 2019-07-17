@@ -5,18 +5,60 @@ Parameters:
   SQSRegion:
     Type: String
     Description: Select the region that the specified SQS queue exists.
-    AllowedValues: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "ap-east-1", "ap-south-1", "ap-northeast-2", "ap-southeast-1", "ap-southeast-2", "ap-northeast-1", "ca-central-1", "eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3", "eu-north-1", "sa-east-1" ]
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+      - ap-east-1
+      - ap-south-1
+      - ap-northeast-2
+      - ap-southeast-1
+      - ap-southeast-2
+      - ap-northeast-1
+      - ca-central-1
+      - eu-central-1
+      - eu-west-1
+      - eu-west-2
+      - eu-west-3
+      - eu-north-1
+      - sa-east-1
 
 Resources:
   GuardDutySNSTopic:
-    Type: AWS::SNS::Topic
-    Properties: 
+    Type: 'AWS::SNS::Topic'
+    Properties:
       DisplayName: guardduty-event-topic
       TopicName: guardduty-event-topic
       Subscription:
-        -
-          Endpoint: !Join [":", ["arn:aws:sqs", !Ref "AWS::Region", !Ref "AWS::AccountId", !Ref SQSQueue ]]
+        - Endpoint: !Join 
+            - ':'
+            - - 'arn:aws:sqs'
+              - !Ref 'AWS::Region'
+              - !Ref 'AWS::AccountId'
+              - !Ref SQSQueue
           Protocol: sqs
+
+  GuardDutySNSTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: Id1
+        Statement:
+          - Sid: Sid1
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sns:Publish'
+            Resource: !Join 
+              - ':'
+              - - 'arn:aws:sns'
+                - !Ref 'AWS::Region'
+                - !Ref 'AWS::AccountId'
+                - 'guardduty-event-topic'
+      Topics:
+        - !Ref GuardDutySNSTopic
 
   SQSQueuePolicy:
     Type: 'AWS::SQS::QueuePolicy'
@@ -37,16 +79,21 @@ Resources:
       Queues:
         - !Ref SQSQueue
     DependsOn: GuardDutySNSTopic
-
+    
   GuardDutyEventRule:
-    Type: AWS::Events::Rule
-    Properties: 
+    Type: 'AWS::Events::Rule'
+    Properties:
       EventPattern:
         source:
-          - "aws.guardduty"
+          - aws.guardduty
       Name: guardduty-event-rule
       State: ENABLED
       Targets:
-        - Arn: !Join [":", ["arn:aws:sns", !Ref "AWS::Region", !Ref "AWS::AccountId", "guardduty-event-rule"]]
+        - Arn: !Join 
+            - ':'
+            - - 'arn:aws:sns'
+              - !Ref 'AWS::Region'
+              - !Ref 'AWS::AccountId'
+              - guardduty-event-topic
           Id: 20190702
     DependsOn: GuardDutySNSTopic
